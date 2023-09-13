@@ -2,44 +2,59 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Load data from the CSV file
-dataEmg = np.loadtxt('data/EMG.csv', delimiter=',')
+Data = np.loadtxt('data/EMG.csv', delimiter=',')
 
-proporcao = 0.8
-rodadas = 100
+N,p = Data.shape
+k = 0
 
-# Gerar os labels
-y = np.repeat(np.arange(1, 6), 1000)
-# y vai repetir esse padrao 10 vezes (50000)
-y = np.tile(y, 10)
+neutro = np.tile(np.array([[1,-1,-1,-1,-1]]),(1000,1)) 
+sorrindo = np.tile(np.array([[-1,1,-1,-1,-1]]),(1000,1)) 
+aberto = np.tile(np.array([[-1,-1,1,-1,-1]]),(1000,1)) 
+surpreso = np.tile(np.array([[-1,-1,-1,1,-1]]),(1000,1)) 
+rabugento = np.tile(np.array([[-1,-1,-1,-1,1]]),(1000,1)) 
 
-# Separa X1 e X2
-x1 = dataEmg[:, 0]
-x2 = dataEmg[:, 1]
+Y = np.tile(np.concatenate((neutro,sorrindo,aberto,surpreso,rabugento)),(10,1))
 
-def separarAleatoriamente(x1, x2, y):
-    indices = np.random.permutation(len(x1))
-    
-    newX1 = x1[indices]
-    newX2 = x2[indices]
-    newY = y[indices]
-    
-    dadosTeste = {
-        'x1': newX1[int(len(x1)*proporcao):],
-        'x2': newX2[int(len(x2)*proporcao):],
-        'y': newY[int(len(y)*proporcao):]
-    }
-    dadosTreino = {
-        'x1': newX1[:int(len(x1)*proporcao)],
-        'x2': newX2[:int(len(x2)*proporcao)],
-        'y': newY[:int(len(y)*proporcao)]
-    }
-    
+x1 = Data[:, 0]
+x2 = Data[:, 1]
 
-def mostrarMQO():
+X = np.concatenate((x1.reshape(-1,1),x2.reshape(-1,1)),axis=1)
+
+# mostrar dados
+# Esse Y é só para plotar com cmap
+Yplot = np.repeat(np.arange(1, 6), 1000)
+Yplot = np.tile(Yplot, 10)
+
+plt.scatter( X[:,0], X[:,1], c=Yplot, edgecolors='black', cmap='rainbow')
+
+X = np.concatenate((
+    np.ones((N,1)),X
+),axis=1)
+
+X_treino = X[0:int(N*.8),:]
+Y_treino = Y[0:int(N*.8),:]
+
+X_teste = X[int(N*.8):,:]
+Y_teste = Y[int(N*.8):,:]
+
+lb = 0.1
+W_hat = np.linalg.pinv(X_treino.T@X_treino)@X_treino.T@Y_treino
+W_hat_r = np.linalg.pinv(X_treino.T@X_treino + lb*np.eye(3))@X_treino.T@Y_treino
+
+Y_hat = X_teste@W_hat
+
+discriminante = np.argmax(Y_hat,axis=1)
+discriminante2 = np.argmax(Y_teste,axis=1)
+
+acertos = discriminante==discriminante2
+print(np.count_nonzero(acertos)/10000)
 
 
-# Plot the data
-plt.scatter(x1, x2, c=y, edgecolors='black', cmap='rainbow')
+plt.xlim(-100,4100)
+plt.ylim(-100,4100)
+plt.show()
+bp=1
+
 
 
 
